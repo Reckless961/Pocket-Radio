@@ -40,7 +40,7 @@ body {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
 }
-button, input { font: inherit; color: inherit; }
+button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
 
@@ -157,30 +157,56 @@ h2 {
 
 /* Finder */
 .search { display: flex; gap: 8px; }
-.search input {
-  flex: 1; min-width: 0;
+.field {
+  min-width: 0;
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--panel);
   font-size: 16px; /* 16px stops iOS zooming on focus */
 }
-.search input::placeholder { color: var(--muted); }
-.search button {
-  padding: 0 16px;
+.search .field { flex: 1; }
+.field::placeholder { color: var(--muted); }
+.btn {
+  padding: 12px 16px;
   border-radius: 10px;
   border: 1px solid var(--glow-dim);
   background: var(--panel);
   color: var(--glow);
   font-weight: 600;
 }
+.filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.filters select {
+  flex: 1 1 150px; min-width: 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 16px;
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 14px; color: var(--muted);
+  -webkit-user-select: none; user-select: none;
+}
+.chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--muted); }
+.chip:has(input:checked) { border-color: var(--glow-dim); color: var(--glow); }
+.chip:has(input:checked)::before { background: var(--glow); border-color: var(--glow); }
+.chip:has(input:focus-visible) { outline: 2px solid var(--glow); outline-offset: 2px; }
+
 .list-title { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
 .stations { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.stations li { display: flex; align-items: center; border-bottom: 1px solid var(--line); }
 .station {
-  width: 100%;
+  flex: 1; min-width: 0;
   display: flex; align-items: center; gap: 12px;
   padding: 12px 4px;
-  background: none; border: 0; border-bottom: 1px solid var(--line);
+  background: none; border: 0;
   text-align: left;
 }
 .station:active { background: var(--panel); }
@@ -195,8 +221,17 @@ h2 {
 .station .m { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
 .station.on .n { color: var(--glow); }
 .station.on .badge { background: var(--glow); color: #1d1404; }
-.note { padding: 16px 4px; color: var(--muted); font-size: 14px; }
+.remove { flex: none; background: none; border: 0; padding: 8px 4px; font-size: 13px; color: var(--bad); }
+.note { padding: 16px 4px; color: var(--muted); font-size: 14px; border-bottom: 0 !important; }
 .note.bad { color: var(--bad); }
+
+/* Add your own */
+details.add { border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; }
+details.add summary { padding: 14px 0; font-weight: 600; color: var(--glow); cursor: pointer; }
+.add-form { display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; }
+.add-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.add-msg { margin: 0; font-size: 13px; color: var(--bad); min-height: 1em; }
+
 footer { margin-top: auto; font-size: 12px; color: var(--muted); }
 footer a { color: inherit; }
 </style>
@@ -227,13 +262,32 @@ footer a { color: inherit; }
   <section aria-labelledby="findHead">
     <div class="head"><h2 id="findHead">Find stations</h2></div>
     <form class="search" id="searchForm" role="search">
-      <input id="q" type="search" inputmode="search" autocomplete="off" autocapitalize="off"
-             placeholder="Name, call sign or frequency" aria-label="Search stations">
-      <button type="submit">Search</button>
+      <input class="field" id="q" type="search" inputmode="search" autocomplete="off" autocapitalize="off"
+             placeholder="Call sign, frequency or name" aria-label="Search stations">
+      <button class="btn" type="submit">Search</button>
     </form>
+    <div class="filters">
+      <select id="region" aria-label="Area"></select>
+      <label class="chip"><input type="checkbox" id="englishOnly"> English only</label>
+      <label class="chip"><input type="checkbox" id="worldwide"> Search other countries</label>
+    </div>
     <p class="list-title" id="listTitle"></p>
     <ul class="stations" id="stations"></ul>
   </section>
+
+  <details class="add" id="addBox">
+    <summary>Add a station that isn't listed</summary>
+    <form class="add-form" id="addForm">
+      <label>Station name
+        <input class="field" id="addName" type="text" autocomplete="off" placeholder="102.3 WBAB">
+      </label>
+      <label>Stream address (starts with https://)
+        <input class="field" id="addUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="off" placeholder="https://…">
+      </label>
+      <p class="add-msg" id="addMsg" role="alert"></p>
+      <button class="btn" type="submit">Add and play</button>
+    </form>
+  </details>
 
   <footer>Streams over the internet, so it uses Wi-Fi or mobile data. Station list from the community directory at <a href="https://www.radio-browser.info/" rel="noopener">radio-browser.info</a>.</footer>
 </main>
@@ -247,11 +301,22 @@ footer a { color: inherit; }
   var PRESET_COUNT = 6;
   var STORE_KEY = "pocketRadio.v1";
   var HOLD_MS = 600;
+  var START_TIMEOUT_MS = 15000;
   var SERVERS = [
     "https://de1.api.radio-browser.info",
     "https://de2.api.radio-browser.info",
     "https://fi1.api.radio-browser.info",
     "https://all.api.radio-browser.info"
+  ];
+  var US_STATES = ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","District of Columbia","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
+  var TZ_STATE = { "America/New_York": "New York", "America/Chicago": "Illinois", "America/Denver": "Colorado", "America/Los_Angeles": "California", "America/Phoenix": "Arizona", "America/Detroit": "Michigan", "America/Anchorage": "Alaska", "Pacific/Honolulu": "Hawaii" };
+
+  // Stations the community directory doesn't list. Addresses come from public station listings.
+  var EXTRAS = [
+    { id: "x-wcbsfm", name: "101.1 WCBS-FM New York", urls: ["https://live.amperwave.net/manifest/audacy-wcbsfmaac-hlsc.m3u8"],
+      state: "New York", cc: "US", place: "New York, United States", tags: "classic hits", lang: "english" },
+    { id: "x-wbab", name: "102.3 WBAB Long Island", urls: ["https://sim-im-cmg.streamguys1.com/lon1023/lon1023-sgplayer-aac"],
+      state: "New York", cc: "US", place: "New York, United States", tags: "classic rock", lang: "english" }
   ];
 
   var $ = function (id) { return document.getElementById(id); };
@@ -260,33 +325,57 @@ footer a { color: inherit; }
     status: $("status"), statusText: $("statusText"), nowName: $("nowName"), nowMeta: $("nowMeta"),
     playBtn: $("playBtn"), playIcon: $("playIcon"), presets: $("presets"), editBtn: $("editBtn"),
     presetHint: $("presetHint"), form: $("searchForm"), q: $("q"),
-    listTitle: $("listTitle"), stations: $("stations")
+    region: $("region"), englishOnly: $("englishOnly"), worldwide: $("worldwide"),
+    listTitle: $("listTitle"), stations: $("stations"),
+    addBox: $("addBox"), addForm: $("addForm"), addName: $("addName"), addUrl: $("addUrl"), addMsg: $("addMsg")
   };
 
   var ICON_PLAY = "M7 4.5v15l13-7.5z";
   var ICON_STOP = "M6 6h12v12H6z";
 
+  var COUNTRY = regionCode();
   var state = {
     presets: new Array(PRESET_COUNT).fill(null),
     current: null,       // station on the readout
+    urlIdx: 0,           // which of the station's addresses is in use
     playing: false,      // user wants audio on
     editing: false,
-    results: []
+    results: [],
+    custom: [],
+    prefs: { region: null, english: /^en\b/i.test(navigator.language || "en"), worldwide: false },
+    term: ""
   };
+  var startTimer = null;
+  var requestNo = 0;
 
   /* ---------- storage ---------- */
+  function fix(s) {
+    if (!s || !s.name) return null;
+    if (!s.urls) s.urls = s.url ? [s.url] : [];
+    delete s.url;
+    return s.urls.length ? s : null;
+  }
   function load() {
     try {
       var saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
-      if (saved && Array.isArray(saved.presets)) {
-        for (var i = 0; i < PRESET_COUNT; i++) state.presets[i] = saved.presets[i] || null;
+      if (!saved) return;
+      if (Array.isArray(saved.presets)) {
+        for (var i = 0; i < PRESET_COUNT; i++) state.presets[i] = fix(saved.presets[i]);
       }
-      if (saved && saved.last) state.current = saved.last;
+      state.current = fix(saved.last);
+      if (Array.isArray(saved.custom)) state.custom = saved.custom.map(fix).filter(Boolean);
+      if (saved.prefs) {
+        ["region", "english", "worldwide"].forEach(function (k) {
+          if (saved.prefs[k] !== undefined) state.prefs[k] = saved.prefs[k];
+        });
+      }
     } catch (e) { /* storage unavailable: run without saved presets */ }
   }
   function save() {
     try {
-      localStorage.setItem(STORE_KEY, JSON.stringify({ presets: state.presets, last: state.current }));
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        presets: state.presets, last: state.current, custom: state.custom, prefs: state.prefs
+      }));
     } catch (e) { /* ignore */ }
   }
 
@@ -307,25 +396,61 @@ footer a { color: inherit; }
     return attempt();
   }
 
+  // A page served over https can only play https streams, so http addresses are upgraded.
+  function candidates(s) {
+    var out = [];
+    function add(u) { if (u && out.indexOf(u) === -1) out.push(u); }
+    var resolved = (s.url_resolved || "").trim();
+    var given = (s.url || "").trim();
+    if (/^https:\/\//i.test(resolved)) add(resolved);
+    if (/^https:\/\//i.test(given) && !/\.(pls|m3u|asx|xspf)(\?|$)/i.test(given)) add(given);
+    if (/^http:\/\//i.test(resolved)) {
+      var up = resolved.replace(/^http:/i, "https:");
+      if (/streamtheworld\.com/i.test(up)) up = up.replace(/^(https:\/\/[^\/:]+):\d+/, "$1");
+      add(up);
+    }
+    return out;
+  }
+
   function tidy(raw) {
     var seen = {};
     var out = [];
     raw.forEach(function (s) {
-      var url = (s.url_resolved || s.url || "").trim();
+      var urls = candidates(s);
       var name = (s.name || "").replace(/\s+/g, " ").trim();
-      if (!name || url.indexOf("https://") !== 0) return;
-      var key = name.toLowerCase() + "|" + url;
-      if (seen[key]) return;
-      seen[key] = true;
+      if (!name || !urls.length) return;
+      if (name.length > 70) name = name.slice(0, 68).trim() + "…";
+      var key = s.stationuuid || urls[0];
+      if (seen[key] || seen[urls[0]]) return;
+      seen[key] = seen[urls[0]] = true;
       out.push({
-        id: s.stationuuid || url,
+        id: key,
         name: name,
-        url: url,
-        place: [s.state, s.country].filter(function (x) { return x && x.trim(); }).join(", "),
-        tags: (s.tags || "").split(",").map(function (t) { return t.trim(); }).filter(Boolean).slice(0, 3).join(" · ")
+        urls: urls,
+        state: (s.state || "").trim(),
+        cc: s.countrycode || "",
+        place: [s.state, shortCountry(s.country)].filter(function (x) { return x && x.trim(); }).join(", "),
+        tags: (s.tags || "").split(",").map(function (t) { return t.trim(); }).filter(Boolean).slice(0, 3).join(" · "),
+        lang: (s.language || "").toLowerCase(),
+        clicks: s.clickcount || 0
       });
     });
     return out;
+  }
+
+  function shortCountry(c) {
+    return /united states/i.test(c || "") ? "United States" : (c || "");
+  }
+
+  var NOT_ENGLISH = /\b(spanish|espa[nñ]ol|latino?|latina|mexican[ao]?|regional mexican|tejano|bachata|salsa|reggaeton|portuguese|brasil|chinese|mandarin|cantonese|korean|russian|hindi|punjabi|arabic|polish|haitian|creole|vietnamese|greek|italian[ao]?)\b/i;
+  function isEnglish(s) {
+    if (s.custom) return true;
+    if (s.lang && s.lang.indexOf("english") === -1) return false;
+    if (!s.lang && NOT_ENGLISH.test(s.name + " " + s.tags)) return false;
+    return true;
+  }
+  function applyFilters(list) {
+    return state.prefs.english ? list.filter(isEnglish) : list;
   }
 
   function regionCode() {
@@ -333,69 +458,140 @@ footer a { color: inherit; }
     var m = /[-_]([A-Za-z]{2})\b/.exec(lang);
     return m ? m[1].toUpperCase() : "US";
   }
-
-  var BASE = { hidebroken: "true", is_https: "true", order: "clickcount", reverse: "true" };
-
-  function showPopular() {
-    var cc = regionCode();
-    note("Loading stations…");
-    els.listTitle.textContent = "";
-    api("/json/stations/search", Object.assign({ countrycode: cc, limit: "40" }, BASE))
-      .then(function (raw) {
-        state.results = tidy(raw);
-        els.listTitle.textContent = "Popular in " + countryName(cc);
-        renderStations("No stations listed for your region. Search for one above.");
-      })
-      .catch(directoryDown);
-  }
-
-  function search(term) {
-    note("Searching…");
-    els.listTitle.textContent = "";
-    api("/json/stations/search", Object.assign({ name: term, limit: "60" }, BASE))
-      .then(function (raw) {
-        state.results = tidy(raw);
-        els.listTitle.textContent = state.results.length + " result" + (state.results.length === 1 ? "" : "s") + " for “" + term + "”";
-        renderStations("Nothing matched. Try the call sign (like WNYC) or a shorter name.");
-      })
-      .catch(directoryDown);
-  }
-
-  function directoryDown() {
-    state.results = [];
-    els.listTitle.textContent = "";
-    note("Couldn't reach the station directory. Check your connection and search again. Your presets still work.", true);
-  }
-
   function countryName(cc) {
     try { return new Intl.DisplayNames([navigator.language || "en"], { type: "region" }).of(cc) || cc; }
     catch (e) { return cc; }
   }
+  function myStations() {
+    return state.custom.concat(EXTRAS.filter(function (x) {
+      return x.cc === COUNTRY && (!state.prefs.region || x.state === state.prefs.region);
+    }));
+  }
+
+  var BASE = { hidebroken: "true", order: "clickcount", reverse: "true" };
+
+  function showPopular() {
+    var mine = ++requestNo;
+    var region = COUNTRY === "US" ? state.prefs.region : "";
+    state.term = "";
+    note("Loading stations…");
+    els.listTitle.textContent = "";
+    var params = Object.assign({ countrycode: COUNTRY, limit: region ? "200" : "80" }, BASE);
+    if (region) params.state = region;
+    api("/json/stations/search", params)
+      .then(function (raw) {
+        if (mine !== requestNo) return;
+        state.results = myStations().concat(applyFilters(tidy(raw)));
+        els.listTitle.textContent = "Popular in " + (region || countryName(COUNTRY));
+        renderStations("No stations listed for this area. Try another area or search above.");
+      })
+      .catch(function () {
+        if (mine !== requestNo) return;
+        state.results = myStations();
+        els.listTitle.textContent = "";
+        renderStations("");
+        els.stations.appendChild(el("li", "note bad", "Couldn't reach the station directory. Check your connection and try again. Your presets still work."));
+      });
+  }
+
+  /* ---------- search ---------- */
+  var FILLER = { fm: 1, am: 1, the: 1, radio: 1, station: 1, and: 1, of: 1, "in": 1, hd: 1 };
+  function words(term) {
+    var all = term.toLowerCase().split(/[\s,]+/).filter(function (w) { return w.length >= 2; });
+    var useful = all.filter(function (w) { return !FILLER[w]; });
+    return useful.length ? useful : all;
+  }
+  function hay(s) { return (s.name + " " + s.tags + " " + s.state).toLowerCase(); }
+  function score(s, toks) {
+    var h = hay(s), h2 = h.replace(/\./g, ""), n = 0;
+    toks.forEach(function (t) {
+      var t2 = t.replace(/\./g, "");
+      if (h.indexOf(t) !== -1 || (t2.length >= 3 && h2.indexOf(t2) !== -1)) n++;
+    });
+    return n;
+  }
+
+  function search(term) {
+    var mine = ++requestNo;
+    var toks = words(term);
+    state.term = term;
+    note("Searching…");
+    els.listTitle.textContent = "";
+    if (!toks.length) { showPopular(); return; }
+    // Ask the directory about the most telling words: frequencies first, then the longest.
+    var ask = toks.slice().sort(function (a, b) {
+      var da = /\d/.test(a) ? 1 : 0, db = /\d/.test(b) ? 1 : 0;
+      return (db - da) || (b.length - a.length);
+    }).slice(0, 3);
+    var extra = state.prefs.worldwide ? {} : { countrycode: COUNTRY };
+    var calls = ask.map(function (w) {
+      return api("/json/stations/search", Object.assign({ name: w, limit: "150" }, BASE, extra))
+        .then(function (raw) { return { ok: true, raw: raw }; }, function () { return { ok: false, raw: [] }; });
+    });
+    Promise.all(calls).then(function (parts) {
+      if (mine !== requestNo) return;
+      var anyOk = parts.some(function (p) { return p.ok; });
+      var raw = [];
+      parts.forEach(function (p) { raw = raw.concat(p.raw); });
+      var pool = state.custom.concat(EXTRAS.filter(function (x) { return state.prefs.worldwide || x.cc === COUNTRY; }))
+        .concat(applyFilters(tidy(raw)));
+      var top = 0;
+      pool.forEach(function (s) { s._score = score(s, toks); if (s._score > top) top = s._score; });
+      var floor = Math.max(1, Math.ceil(top / 2));
+      var region = state.prefs.region;
+      state.results = pool.filter(function (s) { return s._score >= floor; }).sort(function (a, b) {
+        return (b._score - a._score)
+          || ((b.state === region ? 1 : 0) - (a.state === region ? 1 : 0))
+          || ((b.clicks || 0) - (a.clicks || 0));
+      }).slice(0, 80);
+      els.listTitle.textContent = state.results.length + " result" + (state.results.length === 1 ? "" : "s") + " for “" + term + "”";
+      if (!anyOk && !state.results.length) {
+        note("Couldn't reach the station directory. Check your connection and search again. Your presets still work.", true);
+        return;
+      }
+      renderStations("Nothing matched. Try just the call sign (like WKTU) or the frequency. If the station isn't listed, you can add it below.");
+    });
+  }
+
+  function refresh() { if (state.term) search(state.term); else showPopular(); }
 
   /* ---------- playback ---------- */
-  function tune(station) {
+  function tune(station, idx) {
+    idx = idx || 0;
     state.current = station;
+    state.urlIdx = idx;
     state.playing = true;
     save();
     setStatus("Tuning…", "");
-    audio.src = station.url;
+    clearTimeout(startTimer);
+    startTimer = setTimeout(function () { if (state.playing && state.current === station && state.urlIdx === idx) nextAddress(); }, START_TIMEOUT_MS);
+    audio.src = station.urls[idx];
     var p = audio.play();
     if (p && p.catch) p.catch(function (err) {
       if (err && err.name === "AbortError") return;      // replaced by a newer station
-      if (state.current !== station) return;
+      if (state.current !== station || state.urlIdx !== idx) return;
       if (err && err.name === "NotAllowedError") {
+        clearTimeout(startTimer);
         state.playing = false;
         setStatus("Tap play to start", "");
         render();
       } else {
-        failed();
+        nextAddress();
       }
     });
     setMediaSession(station);
     render();
   }
 
+  // Try the station's next address; give up when there are none left.
+  function nextAddress() {
+    var s = state.current;
+    if (s && state.playing && state.urlIdx + 1 < s.urls.length) tune(s, state.urlIdx + 1);
+    else failed();
+  }
+
   function stop() {
+    clearTimeout(startTimer);
     state.playing = false;
     audio.pause();
     audio.removeAttribute("src");   // drop the buffer so play resumes live
@@ -405,6 +601,7 @@ footer a { color: inherit; }
   }
 
   function failed() {
+    clearTimeout(startTimer);
     state.playing = false;
     audio.removeAttribute("src");
     audio.load();
@@ -413,14 +610,16 @@ footer a { color: inherit; }
     renderControls();
   }
 
-  audio.addEventListener("playing", function () { if (state.playing) setStatus("On air", "live"); });
+  audio.addEventListener("playing", function () { clearTimeout(startTimer); if (state.playing) setStatus("On air", "live"); });
   audio.addEventListener("waiting", function () { if (state.playing) setStatus("Buffering…", ""); });
-  audio.addEventListener("stalled", function () { if (state.playing) setStatus("Buffering…", ""); });
-  audio.addEventListener("error", function () { if (state.playing && audio.getAttribute("src")) failed(); });
-  audio.addEventListener("ended", function () { if (state.playing && state.current) tune(state.current); });
+  audio.addEventListener("error", function () { if (state.playing && audio.getAttribute("src")) nextAddress(); });
+  audio.addEventListener("ended", function () { if (state.playing && state.current) tune(state.current, state.urlIdx); });
   audio.addEventListener("pause", function () {
     // paused from the lock screen or by a phone call
-    if (state.playing && audio.paused && audio.getAttribute("src")) { state.playing = false; setStatus("Paused", ""); renderControls(); }
+    if (state.playing && audio.paused && audio.getAttribute("src")) {
+      clearTimeout(startTimer);
+      state.playing = false; setStatus("Paused", ""); renderControls();
+    }
   });
 
   function setStatus(text, cls) {
@@ -459,9 +658,11 @@ footer a { color: inherit; }
   }
 
   function initials(name) {
-    var words = name.replace(/[^A-Za-z0-9 .]/g, " ").trim().split(/\s+/);
+    var freq = /\b(\d{2,3}\.\d|\d{3,4})\b/.exec(name);
+    if (freq) return freq[1].slice(0, 5);
+    var words = name.replace(/[^A-Za-z0-9 ]/g, " ").trim().split(/\s+/);
     if (!words[0]) return "FM";
-    if (words[0].length <= 4 && words[0] === words[0].toUpperCase()) return words[0].slice(0, 4);
+    if (words[0].length <= 4 && words[0] === words[0].toUpperCase()) return words[0];
     return (words[0][0] + (words[1] ? words[1][0] : "")).toUpperCase();
   }
 
@@ -505,8 +706,8 @@ footer a { color: inherit; }
   }
 
   function renderStations(emptyText) {
-    if (!state.results.length) { note(emptyText || "No stations."); return; }
     els.stations.textContent = "";
+    if (!state.results.length) { if (emptyText) note(emptyText); return; }
     state.results.forEach(function (s, i) {
       var li = el("li");
       var b = el("button", "station" + (state.current && s.id === state.current.id ? " on" : ""));
@@ -519,6 +720,13 @@ footer a { color: inherit; }
       if (meta) t.appendChild(el("span", "m", meta));
       b.appendChild(t);
       li.appendChild(b);
+      if (s.custom) {
+        var r = el("button", "remove", "Remove");
+        r.type = "button";
+        r.dataset.remove = s.id;
+        r.setAttribute("aria-label", "Remove " + s.name);
+        li.appendChild(r);
+      }
       els.stations.appendChild(li);
     });
   }
@@ -533,6 +741,25 @@ footer a { color: inherit; }
     });
   }
 
+  function renderFilters() {
+    els.region.textContent = "";
+    if (COUNTRY === "US") {
+      var all = el("option", "", "All of the US");
+      all.value = "";
+      els.region.appendChild(all);
+      US_STATES.forEach(function (name) {
+        var o = el("option", "", name);
+        o.value = name;
+        els.region.appendChild(o);
+      });
+      els.region.value = state.prefs.region || "";
+    } else {
+      els.region.hidden = true;
+    }
+    els.englishOnly.checked = !!state.prefs.english;
+    els.worldwide.checked = !!state.prefs.worldwide;
+  }
+
   /* ---------- events ---------- */
   els.playBtn.addEventListener("click", function () {
     if (!state.current) return;
@@ -540,6 +767,13 @@ footer a { color: inherit; }
   });
 
   els.stations.addEventListener("click", function (e) {
+    var r = e.target.closest(".remove");
+    if (r) {
+      state.custom = state.custom.filter(function (s) { return s.id !== r.dataset.remove; });
+      save();
+      refresh();
+      return;
+    }
     var b = e.target.closest(".station");
     if (!b) return;
     var s = state.results[+b.dataset.i];
@@ -551,6 +785,27 @@ footer a { color: inherit; }
     var term = els.q.value.trim();
     els.q.blur();
     if (term) search(term); else showPopular();
+  });
+  els.q.addEventListener("search", function () { if (!els.q.value.trim() && state.term) showPopular(); });
+
+  els.region.addEventListener("change", function () { state.prefs.region = els.region.value; save(); refresh(); });
+  els.englishOnly.addEventListener("change", function () { state.prefs.english = els.englishOnly.checked; save(); refresh(); });
+  els.worldwide.addEventListener("change", function () { state.prefs.worldwide = els.worldwide.checked; save(); if (state.term) search(state.term); });
+
+  els.addForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = els.addName.value.trim();
+    var url = els.addUrl.value.trim();
+    if (!name) { els.addMsg.textContent = "Give the station a name."; return; }
+    if (!/^https:\/\/\S+\.\S+/i.test(url)) { els.addMsg.textContent = "The stream address must start with https://"; return; }
+    els.addMsg.textContent = "";
+    var s = { id: "c-" + Date.now(), name: name, urls: [url], state: "", cc: COUNTRY, place: "Added by you", tags: "", lang: "", custom: true };
+    state.custom.unshift(s);
+    els.addName.value = ""; els.addUrl.value = "";
+    els.addBox.open = false;
+    tune(s);
+    els.q.value = "";
+    showPopular();   // your own stations sit at the top of this list
   });
 
   els.editBtn.addEventListener("click", function () {
@@ -603,7 +858,12 @@ footer a { color: inherit; }
 
   /* ---------- start ---------- */
   load();
-  if (state.current) setStatus("Off", "");
+  if (state.prefs.region === null) {
+    var tz = "";
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
+    state.prefs.region = (COUNTRY === "US" && TZ_STATE[tz]) || "";
+  }
+  renderFilters();
   render();
   showPopular();
 })();
