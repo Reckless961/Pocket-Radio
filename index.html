@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pocket Radio</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Radio">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#101a1f">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAADNUlEQVR42u3dy3HCMBRGYeNxAWGbTQqgL4qiL+qghSwywyY2D1vIulff2SYmE/nw6+ph+fD1/TMAc4yaAOQAOUAOkAPkADlADpAD5AA5AHKAHCAHyAFygBwgB8gBcoAcADlADpAD5AA5QA6Qo1tulxM5sGhGaD8md1FgSI7dzIjrysH5HHUC43i+Sg5mJDFDzUELycEMyUELycEMyRHQjDRakENgkENgkENgkENgkENgGMoyQ3LQQnIwQ3LQQnIwo2szJEfvg1VyCAxyCAxyCAwFKTMkBy0kBzMkBy0kBzMkh8EqOQQGupFDYJBDYJBDYJBDYBjKMkNy0EJyMENy0EJyMAND8APjZv2gRR450pzUWZP6X4CqcnAiliUjM5yQvGdy0CJohIzMECH7yMGM0H5M/dTeJGio5lj6f2gRpUk/JYepqgTTgI5gQANyiA2TYAYpeSrWUWwIDzUHyAFyYLBN0PMp5ChTjd9/hyW9yLFikPZ3CUWS1xxbhu+mW9ImR5FbK0ISJkfZL70IyZMcT+/lbBI8vup2OW3Pj2qSNRJ1U5qR6v2nS5+w0Y+a8VNE5Y4mwV5vrE80a/2OqYWucAyxjeXd+710ieIjqhzFNzgV9KN+yOtWBqvkCtLd9kUez9f/n7y63OttvmRM/001A6ZbQVI5+hwokqOJvkDPolsBOWDJfuj4aeZG+kHJ0ejCGzmYYeENCtLEO8EsvA39nPKz4i9aeIPJtAg1R6mexUx5eDk+tHHL6VNGK8guR/HwEBupkmPJj3cVWbqEGTm7ldf9UIGmHcrO7vp85YSFdc/JWXgLNs/xwI/VNymQGZ54C7YTrM+Ft6nx6ciNbaQCzVyQFn/izcJbqtFKwWdlPfGWc+Ht6QkLFdq0t05qsjQKaysgB8iBPHJY74jYnqOacbCF0evKxYaaA4P3ysqMsO+V9W6UBC05dfX+bTRUc4iH0IsJo6UQZuxTc+hHvFdWhORcl66XHFIk3LdrHzlgtAJygBwgB0AOkAPkADlADpAD5AA5QA6QA+TQBCAHyAFygBwgB8gBcoAcIAfIAZAD5AA5QA6QA+QAOUAOkAPkAMgBcoAc+AC/6nuVvugyL9QAAAAASUVORK5CYII=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one phone-width column, like a car stereo faceplate —
+   readout on top, six preset keys under it, the station finder below. */
+:root {
+  --bg: #101a1f;
+  --panel: #18262d;
+  --panel-hi: #213540;
+  --line: #2c4450;
+  --text: #e6eef0;
+  --muted: #8ba3ac;
+  --glow: #ffb44a;      /* readout amber */
+  --glow-dim: #7a5a2a;
+  --bad: #ff7a6b;
+  --font-display: "Chakra Petch", "Avenir Next Condensed", "Helvetica Neue", sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.4 var(--font-body);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+           calc(24px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+}
+
+/* Readout */
+.readout {
+  background: #0a1114;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: inset 0 0 24px rgba(255, 180, 74, 0.06);
+}
+.readout-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.status {
+  font: 500 12px/1 var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--glow-dim);
+  display: flex; align-items: center; gap: 8px;
+}
+.status.live { color: var(--glow); }
+.status.bad { color: var(--bad); }
+.bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 10px; }
+.bars i { width: 3px; height: 3px; background: currentColor; border-radius: 1px; }
+.status.live .bars i { animation: bounce 0.9s ease-in-out infinite; }
+.status.live .bars i:nth-child(2) { animation-delay: 0.15s; }
+.status.live .bars i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce { 0%, 100% { height: 3px; } 50% { height: 10px; } }
+@media (prefers-reduced-motion: reduce) {
+  .status.live .bars i { animation: none; height: 8px; }
+}
+.now-name {
+  font: 600 24px/1.15 var(--font-display);
+  color: var(--glow);
+  text-shadow: 0 0 14px rgba(255, 180, 74, 0.35);
+  overflow-wrap: anywhere;
+}
+.now-meta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.play {
+  flex: none;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  border: 1px solid var(--glow-dim);
+  background: var(--panel);
+  color: var(--glow);
+  display: grid; place-items: center;
+}
+.play:active { background: var(--panel-hi); }
+.play:disabled { opacity: 0.4; cursor: default; }
+.play svg { width: 24px; height: 24px; fill: currentColor; }
+
+/* Section heads */
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+h2 {
+  margin: 0;
+  font: 500 13px/1 var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.link {
+  background: none; border: 0; padding: 4px 0;
+  font-size: 14px; color: var(--glow);
+}
+.hint { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+
+/* Presets */
+.presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.preset {
+  position: relative;
+  min-height: 76px;
+  padding: 10px 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  text-align: left;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+.preset:active { background: var(--panel-hi); }
+.preset .num { font: 600 13px/1 var(--font-display); color: var(--glow-dim); }
+.preset .label {
+  font-size: 13px; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; overflow-wrap: anywhere;
+}
+.preset.empty { border-style: dashed; }
+.preset.empty .label { color: var(--muted); }
+.preset.on { border-color: var(--glow); }
+.preset.on .num { color: var(--glow); }
+.preset.saved { animation: flash 0.5s ease-out; }
+@keyframes flash { from { background: var(--glow-dim); } to { background: var(--panel); } }
+.preset .x {
+  position: absolute; top: 6px; right: 6px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--bad); color: #1a0d0b;
+  font: 700 14px/22px var(--font-body); text-align: center;
+}
+
+/* Finder */
+.search { display: flex; gap: 8px; }
+.search input {
+  flex: 1; min-width: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 16px; /* 16px stops iOS zooming on focus */
+}
+.search input::placeholder { color: var(--muted); }
+.search button {
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--glow-dim);
+  background: var(--panel);
+  color: var(--glow);
+  font-weight: 600;
+}
+.list-title { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
+.stations { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.station {
+  width: 100%;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 4px;
+  background: none; border: 0; border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.station:active { background: var(--panel); }
+.station .badge {
+  flex: none; width: 40px; height: 40px; border-radius: 8px;
+  background: var(--panel-hi); color: var(--muted);
+  display: grid; place-items: center;
+  font: 600 14px/1 var(--font-display);
+}
+.station .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.station .n { font-weight: 600; overflow-wrap: anywhere; }
+.station .m { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.station.on .n { color: var(--glow); }
+.station.on .badge { background: var(--glow); color: #1d1404; }
+.note { padding: 16px 4px; color: var(--muted); font-size: 14px; }
+.note.bad { color: var(--bad); }
+footer { margin-top: auto; font-size: 12px; color: var(--muted); }
+footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main class="app">
+
+  <section class="readout" aria-label="Now playing">
+    <div class="readout-text">
+      <div class="status" id="status"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span><span id="statusText">Off</span></div>
+      <div class="now-name" id="nowName">Pick a station</div>
+      <div class="now-meta" id="nowMeta">Tap any station below to start listening.</div>
+    </div>
+    <button class="play" id="playBtn" type="button" aria-label="Play" disabled>
+      <svg id="playIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+    </button>
+  </section>
+
+  <section aria-labelledby="presetsHead">
+    <div class="head">
+      <h2 id="presetsHead">Presets</h2>
+      <button class="link" id="editBtn" type="button">Edit</button>
+    </div>
+    <div class="presets" id="presets"></div>
+    <p class="hint" id="presetHint">Tap an empty key to save the station that is playing. Hold a key to replace it.</p>
+  </section>
+
+  <section aria-labelledby="findHead">
+    <div class="head"><h2 id="findHead">Find stations</h2></div>
+    <form class="search" id="searchForm" role="search">
+      <input id="q" type="search" inputmode="search" autocomplete="off" autocapitalize="off"
+             placeholder="Name, call sign or frequency" aria-label="Search stations">
+      <button type="submit">Search</button>
+    </form>
+    <p class="list-title" id="listTitle"></p>
+    <ul class="stations" id="stations"></ul>
+  </section>
+
+  <footer>Streams over the internet, so it uses Wi-Fi or mobile data. Station list from the community directory at <a href="https://www.radio-browser.info/" rel="noopener">radio-browser.info</a>.</footer>
+</main>
+
+<audio id="audio" preload="none" playsinline></audio>
+
+<script>
+(function () {
+  "use strict";
+
+  var PRESET_COUNT = 6;
+  var STORE_KEY = "pocketRadio.v1";
+  var HOLD_MS = 600;
+  var SERVERS = [
+    "https://de1.api.radio-browser.info",
+    "https://de2.api.radio-browser.info",
+    "https://fi1.api.radio-browser.info",
+    "https://all.api.radio-browser.info"
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var audio = $("audio");
+  var els = {
+    status: $("status"), statusText: $("statusText"), nowName: $("nowName"), nowMeta: $("nowMeta"),
+    playBtn: $("playBtn"), playIcon: $("playIcon"), presets: $("presets"), editBtn: $("editBtn"),
+    presetHint: $("presetHint"), form: $("searchForm"), q: $("q"),
+    listTitle: $("listTitle"), stations: $("stations")
+  };
+
+  var ICON_PLAY = "M7 4.5v15l13-7.5z";
+  var ICON_STOP = "M6 6h12v12H6z";
+
+  var state = {
+    presets: new Array(PRESET_COUNT).fill(null),
+    current: null,       // station on the readout
+    playing: false,      // user wants audio on
+    editing: false,
+    results: []
+  };
+
+  /* ---------- storage ---------- */
+  function load() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+      if (saved && Array.isArray(saved.presets)) {
+        for (var i = 0; i < PRESET_COUNT; i++) state.presets[i] = saved.presets[i] || null;
+      }
+      if (saved && saved.last) state.current = saved.last;
+    } catch (e) { /* storage unavailable: run without saved presets */ }
+  }
+  function save() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ presets: state.presets, last: state.current }));
+    } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- directory ---------- */
+  function api(path, params) {
+    var qs = new URLSearchParams(params).toString();
+    var i = 0;
+    function attempt() {
+      if (i >= SERVERS.length) return Promise.reject(new Error("directory unreachable"));
+      var url = SERVERS[i++] + path + "?" + qs;
+      var ctl = ("AbortController" in window) ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 8000);
+      return fetch(url, ctl ? { signal: ctl.signal } : undefined)
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .finally(function () { clearTimeout(timer); })
+        .catch(attempt);
+    }
+    return attempt();
+  }
+
+  function tidy(raw) {
+    var seen = {};
+    var out = [];
+    raw.forEach(function (s) {
+      var url = (s.url_resolved || s.url || "").trim();
+      var name = (s.name || "").replace(/\s+/g, " ").trim();
+      if (!name || url.indexOf("https://") !== 0) return;
+      var key = name.toLowerCase() + "|" + url;
+      if (seen[key]) return;
+      seen[key] = true;
+      out.push({
+        id: s.stationuuid || url,
+        name: name,
+        url: url,
+        place: [s.state, s.country].filter(function (x) { return x && x.trim(); }).join(", "),
+        tags: (s.tags || "").split(",").map(function (t) { return t.trim(); }).filter(Boolean).slice(0, 3).join(" · ")
+      });
+    });
+    return out;
+  }
+
+  function regionCode() {
+    var lang = (navigator.languages && navigator.languages[0]) || navigator.language || "en-US";
+    var m = /[-_]([A-Za-z]{2})\b/.exec(lang);
+    return m ? m[1].toUpperCase() : "US";
+  }
+
+  var BASE = { hidebroken: "true", is_https: "true", order: "clickcount", reverse: "true" };
+
+  function showPopular() {
+    var cc = regionCode();
+    note("Loading stations…");
+    els.listTitle.textContent = "";
+    api("/json/stations/search", Object.assign({ countrycode: cc, limit: "40" }, BASE))
+      .then(function (raw) {
+        state.results = tidy(raw);
+        els.listTitle.textContent = "Popular in " + countryName(cc);
+        renderStations("No stations listed for your region. Search for one above.");
+      })
+      .catch(directoryDown);
+  }
+
+  function search(term) {
+    note("Searching…");
+    els.listTitle.textContent = "";
+    api("/json/stations/search", Object.assign({ name: term, limit: "60" }, BASE))
+      .then(function (raw) {
+        state.results = tidy(raw);
+        els.listTitle.textContent = state.results.length + " result" + (state.results.length === 1 ? "" : "s") + " for “" + term + "”";
+        renderStations("Nothing matched. Try the call sign (like WNYC) or a shorter name.");
+      })
+      .catch(directoryDown);
+  }
+
+  function directoryDown() {
+    state.results = [];
+    els.listTitle.textContent = "";
+    note("Couldn't reach the station directory. Check your connection and search again. Your presets still work.", true);
+  }
+
+  function countryName(cc) {
+    try { return new Intl.DisplayNames([navigator.language || "en"], { type: "region" }).of(cc) || cc; }
+    catch (e) { return cc; }
+  }
+
+  /* ---------- playback ---------- */
+  function tune(station) {
+    state.current = station;
+    state.playing = true;
+    save();
+    setStatus("Tuning…", "");
+    audio.src = station.url;
+    var p = audio.play();
+    if (p && p.catch) p.catch(function (err) {
+      if (err && err.name === "AbortError") return;      // replaced by a newer station
+      if (state.current !== station) return;
+      if (err && err.name === "NotAllowedError") {
+        state.playing = false;
+        setStatus("Tap play to start", "");
+        render();
+      } else {
+        failed();
+      }
+    });
+    setMediaSession(station);
+    render();
+  }
+
+  function stop() {
+    state.playing = false;
+    audio.pause();
+    audio.removeAttribute("src");   // drop the buffer so play resumes live
+    audio.load();
+    setStatus("Off", "");
+    render();
+  }
+
+  function failed() {
+    state.playing = false;
+    audio.removeAttribute("src");
+    audio.load();
+    setStatus("No signal", "bad");
+    els.nowMeta.textContent = "This station's stream didn't start. Try again or pick another station.";
+    renderControls();
+  }
+
+  audio.addEventListener("playing", function () { if (state.playing) setStatus("On air", "live"); });
+  audio.addEventListener("waiting", function () { if (state.playing) setStatus("Buffering…", ""); });
+  audio.addEventListener("stalled", function () { if (state.playing) setStatus("Buffering…", ""); });
+  audio.addEventListener("error", function () { if (state.playing && audio.getAttribute("src")) failed(); });
+  audio.addEventListener("ended", function () { if (state.playing && state.current) tune(state.current); });
+  audio.addEventListener("pause", function () {
+    // paused from the lock screen or by a phone call
+    if (state.playing && audio.paused && audio.getAttribute("src")) { state.playing = false; setStatus("Paused", ""); renderControls(); }
+  });
+
+  function setStatus(text, cls) {
+    els.statusText.textContent = text;
+    els.status.className = "status" + (cls ? " " + cls : "");
+  }
+
+  function setMediaSession(station) {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: station.name, artist: station.place || "Live radio", album: "Pocket Radio" });
+      navigator.mediaSession.setActionHandler("play", function () { if (state.current) tune(state.current); });
+      navigator.mediaSession.setActionHandler("pause", stop);
+      navigator.mediaSession.setActionHandler("stop", stop);
+      navigator.mediaSession.setActionHandler("nexttrack", function () { stepPreset(1); });
+      navigator.mediaSession.setActionHandler("previoustrack", function () { stepPreset(-1); });
+    } catch (e) { /* older browsers */ }
+  }
+
+  function stepPreset(dir) {
+    var filled = [];
+    state.presets.forEach(function (p, i) { if (p) filled.push(i); });
+    if (!filled.length) return;
+    var here = state.current ? state.presets.findIndex(function (p) { return p && p.id === state.current.id; }) : -1;
+    var pos = filled.indexOf(here);
+    var next = pos === -1 ? (dir > 0 ? 0 : filled.length - 1) : (pos + dir + filled.length) % filled.length;
+    tune(state.presets[filled[next]]);
+  }
+
+  /* ---------- rendering ---------- */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function initials(name) {
+    var words = name.replace(/[^A-Za-z0-9 .]/g, " ").trim().split(/\s+/);
+    if (!words[0]) return "FM";
+    if (words[0].length <= 4 && words[0] === words[0].toUpperCase()) return words[0].slice(0, 4);
+    return (words[0][0] + (words[1] ? words[1][0] : "")).toUpperCase();
+  }
+
+  function renderControls() {
+    var s = state.current;
+    els.playBtn.disabled = !s;
+    els.playBtn.setAttribute("aria-label", state.playing ? "Stop" : "Play");
+    els.playIcon.firstElementChild.setAttribute("d", state.playing ? ICON_STOP : ICON_PLAY);
+  }
+
+  function renderNow() {
+    var s = state.current;
+    if (!s) return;
+    els.nowName.textContent = s.name;
+    els.nowMeta.textContent = [s.place, s.tags].filter(Boolean).join(" — ") || "Live radio";
+  }
+
+  function renderPresets() {
+    els.presets.textContent = "";
+    state.presets.forEach(function (p, i) {
+      var b = el("button", "preset" + (p ? "" : " empty"));
+      b.type = "button";
+      b.dataset.i = String(i);
+      if (p && state.current && p.id === state.current.id) b.classList.add("on");
+      b.appendChild(el("span", "num", String(i + 1)));
+      b.appendChild(el("span", "label", p ? p.name : (state.current ? "Save here" : "Empty")));
+      b.setAttribute("aria-label", p ? "Preset " + (i + 1) + ": " + p.name : "Preset " + (i + 1) + ", empty");
+      if (state.editing && p) b.appendChild(el("span", "x", "×"));
+      els.presets.appendChild(b);
+    });
+    els.editBtn.textContent = state.editing ? "Done" : "Edit";
+    els.editBtn.hidden = !state.editing && !state.presets.some(Boolean);
+    els.presetHint.textContent = state.editing
+      ? "Tap a preset to clear it."
+      : "Tap an empty key to save the station that is playing. Hold a key to replace it.";
+  }
+
+  function note(text, bad) {
+    els.stations.textContent = "";
+    els.stations.appendChild(el("li", "note" + (bad ? " bad" : ""), text));
+  }
+
+  function renderStations(emptyText) {
+    if (!state.results.length) { note(emptyText || "No stations."); return; }
+    els.stations.textContent = "";
+    state.results.forEach(function (s, i) {
+      var li = el("li");
+      var b = el("button", "station" + (state.current && s.id === state.current.id ? " on" : ""));
+      b.type = "button";
+      b.dataset.i = String(i);
+      b.appendChild(el("span", "badge", initials(s.name)));
+      var t = el("span", "txt");
+      t.appendChild(el("span", "n", s.name));
+      var meta = [s.place, s.tags].filter(Boolean).join(" — ");
+      if (meta) t.appendChild(el("span", "m", meta));
+      b.appendChild(t);
+      li.appendChild(b);
+      els.stations.appendChild(li);
+    });
+  }
+
+  function render() {
+    renderNow();
+    renderControls();
+    renderPresets();
+    Array.prototype.forEach.call(els.stations.querySelectorAll(".station"), function (b) {
+      var s = state.results[+b.dataset.i];
+      b.classList.toggle("on", !!(s && state.current && s.id === state.current.id));
+    });
+  }
+
+  /* ---------- events ---------- */
+  els.playBtn.addEventListener("click", function () {
+    if (!state.current) return;
+    if (state.playing) stop(); else tune(state.current);
+  });
+
+  els.stations.addEventListener("click", function (e) {
+    var b = e.target.closest(".station");
+    if (!b) return;
+    var s = state.results[+b.dataset.i];
+    if (s) tune(s);
+  });
+
+  els.form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var term = els.q.value.trim();
+    els.q.blur();
+    if (term) search(term); else showPopular();
+  });
+
+  els.editBtn.addEventListener("click", function () {
+    state.editing = !state.editing;
+    renderPresets();
+  });
+
+  function storePreset(i) {
+    if (!state.current) return;
+    state.presets[i] = state.current;
+    save();
+    renderPresets();
+    var b = els.presets.children[i];
+    if (b) b.classList.add("saved");
+    if (navigator.vibrate) { try { navigator.vibrate(30); } catch (e) {} }
+  }
+
+  // Tap plays or saves; holding a key stores the current station on it.
+  var hold = { timer: null, fired: false };
+  els.presets.addEventListener("pointerdown", function (e) {
+    var b = e.target.closest(".preset");
+    if (!b || state.editing) return;
+    hold.fired = false;
+    clearTimeout(hold.timer);
+    hold.timer = setTimeout(function () {
+      hold.fired = true;
+      storePreset(+b.dataset.i);
+    }, HOLD_MS);
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(function (type) {
+    els.presets.addEventListener(type, function () { clearTimeout(hold.timer); }, true);
+  });
+  els.presets.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  els.presets.addEventListener("click", function (e) {
+    var b = e.target.closest(".preset");
+    if (!b) return;
+    if (hold.fired) { hold.fired = false; return; }
+    var i = +b.dataset.i;
+    var p = state.presets[i];
+    if (state.editing) {
+      if (p) { state.presets[i] = null; save(); }
+      if (!state.presets.some(Boolean)) state.editing = false;
+      renderPresets();
+    } else if (p) {
+      tune(p);
+    } else if (state.current) {
+      storePreset(i);
+    }
+  });
+
+  /* ---------- start ---------- */
+  load();
+  if (state.current) setStatus("Off", "");
+  render();
+  showPopular();
+})();
+</script>
+</body>
+</html>
